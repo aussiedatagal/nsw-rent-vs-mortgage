@@ -1,6 +1,6 @@
 # Who Pays for the Asset? A Renter's Map of NSW
 
-*I threw this map together to explore a simple question about the housing market: who's actually paying for the asset? It compares the median weekly rent in a postcode to an estimated mortgage payment. The red spots highlight where renters aren't just covering the landlord's costs but are actively helping pay off a property that someone else owns*
+I threw this map together to explore a simple question about the housing market: who's actually paying for the asset? It compares the median weekly rent in a postcode to an estimated mortgage payment. The red spots highlight where renters aren't just covering the landlord's costs but are actively helping pay off a property that someone else owns
 
 **[View the live map here\!](https://aussiedatagal.github.io/nsw-rent-vs-buy)**
 
