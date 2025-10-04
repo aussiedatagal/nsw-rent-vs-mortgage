@@ -4,6 +4,8 @@ I threw this map together to explore a simple question about the housing market:
 
 **[View the live map here\!](https://aussiedatagal.github.io/nsw-rent-vs-buy)**
 
+![Screenshot](screenshot.png)
+
 ## The Data
 
 This project is built on publicly available data from Australian government agencies.
