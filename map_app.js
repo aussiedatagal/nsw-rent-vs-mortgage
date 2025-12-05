@@ -191,6 +191,12 @@ class HousingCostMap {
 
                 data.calculated_weekly_payment = mortgage.payment * 12 / 52;
                 data.calculated_weekly_interest = mortgage.interest * 12 / 52;
+                // Calculate the ratio of interest to payment - this is the threshold where rent covers interest only
+                if (data.calculated_weekly_payment > 0) {
+                    data.interest_to_payment_ratio = data.calculated_weekly_interest / data.calculated_weekly_payment;
+                } else {
+                    data.interest_to_payment_ratio = 0;
+                }
                 if (!rent) {
                     data.rent_vs_payment_ratio = null;
                 } else if (data.calculated_weekly_payment > 0) {
@@ -241,28 +247,34 @@ class HousingCostMap {
         }
 
         this._prepareAndRenderTable();
+        this._updateLegend();
 
         if (this.openPostcode) {
             this._refreshOpenPopup();
         }
     }
 
-    _getColor(ratio) {
+    _getColor(ratio, interestToPaymentRatio = null) {
         if (ratio === null || isNaN(ratio)) return '#ccc';
-        if (ratio >= 1.25 || ratio === Infinity) return '#ef4444';
-        if (ratio >= 1.05) return '#f97316';
-        if (ratio >= 0.95) return '#fbbf24';
-        if (ratio >= 0.75) return '#22c55e';
-        return '#0f766e';
+        // Use the interest-to-payment ratio as the threshold for Category 1 (Green)
+        // This is where rent covers interest only
+        const interestThreshold = interestToPaymentRatio !== null && interestToPaymentRatio > 0 
+            ? interestToPaymentRatio 
+            : 0.75; // Fallback to 0.75 if not available
+        
+        if (ratio >= 1.0 || ratio === Infinity) return '#ef4444'; // Category 3: Rent covers entire payment or more
+        if (ratio >= interestThreshold) return '#fbbf24'; // Category 2: Rent covers interest and then some
+        return '#22c55e'; // Category 1: Rent does not even cover the interest
     }
 
     _styleFeature(feature) {
         const postcode = String(feature.properties.POA_CODE21);
         const data = this.housingData[postcode];
         const ratio = data ? data.rent_vs_payment_ratio : null;
+        const interestToPaymentRatio = data ? data.interest_to_payment_ratio : null;
         return {
             ...this.defaultStyle,
-            fillColor: this._getColor(ratio)
+            fillColor: this._getColor(ratio, interestToPaymentRatio)
         };
     }
 
@@ -518,18 +530,50 @@ class HousingCostMap {
         svg.append("text").attr("x", -margin.left + 5).attr("y", center + 4).attr("fill", "#1f2937").style("font-size", "10px").style("font-weight", "bold").text(label);
     }
 
+    _getRepresentativeInterestRatio() {
+        // Calculate interest-to-payment ratio using a representative loan amount
+        // This is used for the legend display
+        const getFloat = id => parseFloat(document.getElementById(id)?.value) || 0;
+        const interestRate = getFloat('interestRate');
+        const loanTermYears = getFloat('loanTerm');
+        const REPRESENTATIVE_LOAN = 500000; // $500k representative loan
+        
+        if (interestRate > 0 && loanTermYears > 0 && this.mortgageType === 'PI') {
+            const mortgage = this._calculateMortgage(REPRESENTATIVE_LOAN, interestRate, loanTermYears, this.mortgageType);
+            const weeklyPayment = mortgage.payment * 12 / 52;
+            const weeklyInterest = mortgage.interest * 12 / 52;
+            if (weeklyPayment > 0) {
+                return weeklyInterest / weeklyPayment;
+            }
+        }
+        // For IO loans, interest equals payment, so ratio is 1.0
+        if (this.mortgageType === 'IO') {
+            return 1.0;
+        }
+        // Fallback
+        return 0.75;
+    }
+
+    _updateLegend() {
+        if (this.legend) {
+            this.map.removeControl(this.legend);
+        }
+        this._addLegend();
+    }
+
     _addLegend() {
         // Use different position on mobile to avoid overlap with toggle button
         const isMobile = window.innerWidth < 768;
         const legend = L.control({ position: isMobile ? 'bottomleft' : 'bottomright' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend p-1.5 md:p-2 mobile-legend');
+            const interestThreshold = this._getRepresentativeInterestRatio();
+            const interestThresholdPercent = (interestThreshold * 100).toFixed(0);
+            
             const grades = [
-                { limit: 0.75, color: this._getColor(0.74), label: '&le; 0.75 (Rent Much Cheaper)' },
-                { limit: 0.95, color: this._getColor(0.85), label: '0.75 &ndash; 0.95 (Rent Cheaper)' },
-                { limit: 1.05, color: this._getColor(1.0), label: '0.95 &ndash; 1.05 (Equal Cost)' },
-                { limit: 1.25, color: this._getColor(1.15), label: '1.05 &ndash; 1.25 (Mortgage Cheaper)' },
-                { limit: Infinity, color: this._getColor(1.5), label: '&ge; 1.25 (Mortgage Much Cheaper)' }
+                { ratio: interestThreshold * 0.5, color: this._getColor(interestThreshold * 0.5, interestThreshold), label: `&lt; ${interestThresholdPercent}% (Rent does not cover interest)` },
+                { ratio: (interestThreshold + 1.0) / 2, color: this._getColor((interestThreshold + 1.0) / 2, interestThreshold), label: `${interestThresholdPercent}% &ndash; 100% (Rent covers interest and then some)` },
+                { ratio: 1.2, color: this._getColor(1.2, interestThreshold), label: '&ge; 100% (Rent covers entire payment or more)' }
             ];
 
             let content = '<h4 class="font-bold mb-0.5 md:mb-1 text-xs md:text-sm">Rent/Payment Ratio</h4><div class="space-y-0.5 md:space-y-1">';
