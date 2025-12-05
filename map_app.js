@@ -71,7 +71,8 @@ class HousingCostMap {
         });
 
         this._setupCollapsibleControls();
-        this._setupMobileToggle();
+        this._setupDescriptionToggle();
+        this._setupMobileOverlay();
     }
 
     async _loadData() {
@@ -337,6 +338,13 @@ class HousingCostMap {
         const data = this.housingData[postcode];
         if (!data) return;
 
+        // Check if mobile and show overlay instead
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+            this._showMobileOverlay(postcode, data);
+            return;
+        }
+
         if (this.activePopupLayer && this.activePopupLayer !== layer) {
             this.activePopupLayer.closePopup();
         }
@@ -360,7 +368,18 @@ class HousingCostMap {
     }
 
     _refreshOpenPopup() {
-        if (this.activePopupLayer) {
+        // Check if mobile overlay is open
+        const overlay = document.getElementById('mobile-detail-overlay');
+        if (overlay && !overlay.classList.contains('translate-y-full')) {
+            // Refresh mobile overlay
+            if (this.openPostcode) {
+                const data = this.housingData[this.openPostcode];
+                if (data) {
+                    this._showMobileOverlay(this.openPostcode, data);
+                }
+            }
+        } else if (this.activePopupLayer) {
+            // Refresh desktop popup
             this._showPopup({ latlng: this.activePopupLayer.getBounds().getCenter() }, this.activePopupLayer.feature, this.activePopupLayer, true);
         }
     }
@@ -466,9 +485,11 @@ class HousingCostMap {
     }
 
     _addLegend() {
-        const legend = L.control({ position: 'bottomright' });
+        // Use different position on mobile to avoid overlap with toggle button
+        const isMobile = window.innerWidth < 768;
+        const legend = L.control({ position: isMobile ? 'bottomleft' : 'bottomright' });
         legend.onAdd = () => {
-            const div = L.DomUtil.create('div', 'info legend p-2');
+            const div = L.DomUtil.create('div', 'info legend p-1.5 md:p-2 mobile-legend');
             const grades = [
                 { limit: 0.75, color: this._getColor(0.74), label: '&le; 0.75 (Rent Much Cheaper)' },
                 { limit: 0.95, color: this._getColor(0.85), label: '0.75 &ndash; 0.95 (Rent Cheaper)' },
@@ -477,14 +498,15 @@ class HousingCostMap {
                 { limit: Infinity, color: this._getColor(1.5), label: '&ge; 1.25 (Mortgage Much Cheaper)' }
             ];
 
-            let content = '<h4 class="font-bold mb-1 text-sm">Rent/Payment Ratio</h4><div class="space-y-1">';
+            let content = '<h4 class="font-bold mb-0.5 md:mb-1 text-xs md:text-sm">Rent/Payment Ratio</h4><div class="space-y-0.5 md:space-y-1">';
             grades.forEach(g => {
-                content += `<p><i style="background:${g.color}"></i> ${g.label}</p>`;
+                content += `<p class="text-xs leading-tight"><i style="background:${g.color}"></i> ${g.label}</p>`;
             });
-            content += '</div><hr class="my-1 border-gray-300"><p class="text-xs">No Data: <i style="background:#ccc; border: 1px solid #777; margin-left: 0;"></i></p>';
+            content += '</div><hr class="my-0.5 md:my-1 border-gray-300"><p class="text-xs leading-tight">No Data: <i style="background:#ccc; border: 1px solid #777; margin-left: 0;"></i></p>';
             div.innerHTML = content;
             return div;
         };
+        this.legend = legend;
         legend.addTo(this.map);
     }
 
@@ -515,34 +537,131 @@ class HousingCostMap {
         });
     }
 
-    _setupMobileToggle() {
-        const showMapBtn = document.getElementById('show-map-btn');
-        const showListBtn = document.getElementById('show-list-btn');
-        const mapContainer = document.getElementById('map-container');
-        const dataTablePanel = document.getElementById('data-table-panel');
-
-        const setActiveView = (showMap) => {
-            mapContainer.classList.toggle('hidden', !showMap);
-            dataTablePanel.classList.toggle('hidden', showMap);
-
-            showMapBtn.classList.toggle('bg-blue-600', showMap);
-            showMapBtn.classList.toggle('text-white', showMap);
-            showMapBtn.classList.toggle('bg-gray-200', !showMap);
-            showMapBtn.classList.toggle('text-gray-700', !showMap);
-
-            showListBtn.classList.toggle('bg-blue-600', !showMap);
-            showListBtn.classList.toggle('text-white', !showMap);
-            showListBtn.classList.toggle('bg-gray-200', showMap);
-            showListBtn.classList.toggle('text-gray-700', showMap);
-
-            if (showMap) {
-                this.map.invalidateSize();
-            }
-        };
-
-        showMapBtn.addEventListener('click', () => setActiveView(true));
-        showListBtn.addEventListener('click', () => setActiveView(false));
+    _setupDescriptionToggle() {
+        const toggleBtn = document.getElementById('toggle-description');
+        const mobileDesc = document.getElementById('mobile-description');
+        const plusIcon = document.getElementById('plus-icon');
+        const xIcon = document.getElementById('x-icon');
+        
+        if (toggleBtn && mobileDesc && plusIcon && xIcon) {
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = mobileDesc.classList.contains('hidden');
+                mobileDesc.classList.toggle('hidden');
+                
+                // Toggle icons
+                if (isHidden) {
+                    plusIcon.classList.add('hidden');
+                    xIcon.classList.remove('hidden');
+                    toggleBtn.setAttribute('aria-label', 'Hide description');
+                } else {
+                    plusIcon.classList.remove('hidden');
+                    xIcon.classList.add('hidden');
+                    toggleBtn.setAttribute('aria-label', 'Show description');
+                }
+            });
+        }
     }
+
+    _setupMobileOverlay() {
+        const closeBtn = document.getElementById('close-overlay');
+        const overlay = document.getElementById('mobile-detail-overlay');
+        
+        if (closeBtn && overlay) {
+            closeBtn.addEventListener('click', () => {
+                this._hideMobileOverlay();
+            });
+            
+            // Close on backdrop click (optional)
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this._hideMobileOverlay();
+                }
+            });
+        }
+    }
+
+    _showMobileOverlay(postcode, data) {
+        const overlay = document.getElementById('mobile-detail-overlay');
+        if (!overlay) return;
+
+        // Store the open postcode for refresh
+        this.openPostcode = postcode;
+
+        const formatter = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+        const suburbs = this.suburbLookup[postcode] || `Postcode ${postcode}`;
+
+        // Set header content
+        document.getElementById('overlay-suburbs').textContent = suburbs;
+        document.getElementById('overlay-postcode').textContent = `Postcode: ${postcode}`;
+
+        // Set median costs
+        const formatCurrency = (val) => (val != null) ? formatter.format(val) : 'N/A';
+        document.getElementById('overlay-median-rent-weekly').textContent = formatCurrency(data.yearly_median_weekly_rent);
+        const salesPrice = (data.yearly_median_sales_price_000s || 0) * 1000;
+        document.getElementById('overlay-median-sale-price-000s').textContent = salesPrice > 0 ? (salesPrice / 1000).toLocaleString() : 'N/A';
+
+        // Set mortgage details
+        const mortgageLabel = document.getElementById('overlay-mortgage-label');
+        const interestWrapper = document.getElementById('overlay-interest-component-wrapper');
+
+        if (this.mortgageType === 'IO') {
+            mortgageLabel.textContent = 'Interest Payment:';
+            document.getElementById('overlay-mortgage-payment-weekly').textContent = formatCurrency(data.calculated_weekly_interest);
+            interestWrapper.classList.add('hidden');
+        } else {
+            mortgageLabel.textContent = 'Mortgage Payment:';
+            document.getElementById('overlay-mortgage-payment-weekly').textContent = formatCurrency(data.calculated_weekly_payment);
+            document.getElementById('overlay-interest-component-weekly').textContent = formatCurrency(data.calculated_weekly_interest);
+            interestWrapper.classList.remove('hidden');
+        }
+
+        // Create box plots
+        const rentQ3 = data.yearly_third_quartile_weekly_rent || data.yearly_median_weekly_rent || 0;
+        const paymentQ3 = data.yearly_third_quartile_weekly_payment || data.calculated_weekly_payment || 0;
+        let maxCost = Math.max(rentQ3, paymentQ3) * 1.1;
+        if (maxCost === 0) {
+            maxCost = 100;
+        }
+
+        // Clear existing plots
+        const rentPlot = document.getElementById('overlay-box-plot-rent');
+        const mortgagePlot = document.getElementById('overlay-box-plot-mortgage');
+        rentPlot.innerHTML = '';
+        mortgagePlot.innerHTML = '';
+
+        this._createBoxPlot(rentPlot, {
+            q1: data.yearly_first_quartile_weekly_rent,
+            median: data.yearly_median_weekly_rent,
+            q3: data.yearly_third_quartile_weekly_rent,
+            label: 'Rent',
+            color: '#22c55e',
+            maxCost
+        });
+        this._createBoxPlot(mortgagePlot, {
+            q1: data.yearly_first_quartile_weekly_payment,
+            median: data.calculated_weekly_payment,
+            q3: data.yearly_third_quartile_weekly_payment,
+            label: this.mortgageType === 'PI' ? 'P+I' : 'I.O.',
+            color: '#ef4444',
+            maxCost
+        });
+
+        // Show overlay with animation
+        overlay.classList.remove('translate-y-full');
+        overlay.classList.add('translate-y-0');
+        document.body.style.overflow = 'hidden';
+    }
+
+    _hideMobileOverlay() {
+        const overlay = document.getElementById('mobile-detail-overlay');
+        if (!overlay) return;
+
+        overlay.classList.remove('translate-y-0');
+        overlay.classList.add('translate-y-full');
+        document.body.style.overflow = '';
+        this.openPostcode = null;
+    }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {

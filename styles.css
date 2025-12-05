@@ -19,6 +19,22 @@
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
+.legend.mobile-legend {
+    max-width: 160px;
+    font-size: 10px;
+    line-height: 14px;
+    padding: 4px 6px;
+}
+
+@media (min-width: 768px) {
+    .legend.mobile-legend {
+        max-width: none;
+        font-size: inherit;
+        line-height: 18px;
+        padding: 6px 8px;
+    }
+}
+
 .legend i {
     width: 18px;
     height: 18px;
@@ -26,6 +42,20 @@
     margin-right: 8px;
     opacity: 0.7;
     border-radius: 2px;
+}
+
+.legend.mobile-legend i {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+}
+
+@media (min-width: 768px) {
+    .legend.mobile-legend i {
+        width: 18px;
+        height: 18px;
+        margin-right: 8px;
+    }
 }
 
 .box-plot-container { 
