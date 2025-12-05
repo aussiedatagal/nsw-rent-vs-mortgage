@@ -29,6 +29,7 @@ class HousingCostMap {
     async _initialize() {
         this._initMap();
         this._bindEventListeners();
+        await this._fetchCurrentInterestRate();
         try {
             await this._loadData();
             this.updateMapAndTable();
@@ -73,6 +74,39 @@ class HousingCostMap {
         this._setupCollapsibleControls();
         this._setupDescriptionToggle();
         this._setupMobileOverlay();
+    }
+
+    async _fetchCurrentInterestRate() {
+        const interestRateInput = document.getElementById('interestRate');
+        if (!interestRateInput) return;
+
+        const DEFAULT_RATE = 5.3;
+
+        try {
+            const savedRate = localStorage.getItem('lastInterestRate');
+            if (savedRate) {
+                const saved = parseFloat(savedRate);
+                if (!isNaN(saved) && saved >= 2 && saved <= 15) {
+                    interestRateInput.value = saved.toFixed(2);
+                    return;
+                }
+            }
+        } catch (error) {
+            // localStorage not available
+        }
+
+        interestRateInput.value = DEFAULT_RATE;
+
+        interestRateInput.addEventListener('change', () => {
+            try {
+                const newRate = parseFloat(interestRateInput.value);
+                if (!isNaN(newRate) && newRate >= 2 && newRate <= 15) {
+                    localStorage.setItem('lastInterestRate', newRate.toString());
+                }
+            } catch (error) {
+                // Ignore
+            }
+        });
     }
 
     async _loadData() {
