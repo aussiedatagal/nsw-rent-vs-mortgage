@@ -5,13 +5,3 @@ dist
 .env
 .env.local
 
-# Data folders - these contain source data files, not needed for the site
-# Use /data/ to only ignore root-level data folder, not public/data/
-/data/
-/data_orig/
-/old/
-
-public/data/*.xlsx
-public/data/*.py
-public/data/rent_2024_*.csv
-public/data/sales_2024_*.csv
