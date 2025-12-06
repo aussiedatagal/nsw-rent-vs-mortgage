@@ -24,7 +24,8 @@ export function DataTable({ housingData, suburbLookup, onPostcodeClick, loading 
         suburb: suburbLookup[d.Postcode] || `Postcode ${d.Postcode}`,
         ratio: d.rent_vs_payment_ratio,
         rent: d.yearly_median_weekly_rent,
-        mortgage_payment: d.calculated_weekly_payment
+        mortgage_payment: d.calculated_weekly_payment,
+        total_cost: d.total_weekly_homeowner_cost
       }));
 
     if (searchQuery.trim()) {
@@ -117,10 +118,10 @@ export function DataTable({ housingData, suburbLookup, onPostcodeClick, loading 
                   Rent (Wk)
                 </th>
                 <th
-                  onClick={() => handleSort('mortgage_payment')}
-                  className={`px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 ${getSortClass('mortgage_payment')}`}
+                  onClick={() => handleSort('total_cost')}
+                  className={`px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 ${getSortClass('total_cost')}`}
                 >
-                  Mortgage (Wk)
+                  Total Cost (Wk)
                 </th>
               </tr>
             </thead>
@@ -138,7 +139,7 @@ export function DataTable({ housingData, suburbLookup, onPostcodeClick, loading 
                   <td className="px-2 py-2 text-sm text-gray-900">{formatRatio(item.ratio)}</td>
                   <td className="px-2 py-2 text-sm text-gray-900">{formatCurrency(item.rent)}</td>
                   <td className="px-2 py-2 text-sm text-gray-900">
-                    {formatCurrency(item.mortgage_payment)}
+                    {formatCurrency(item.total_cost)}
                   </td>
                 </tr>
               ))}
