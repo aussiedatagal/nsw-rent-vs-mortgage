@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#map { 
+    height: 100%; 
+    width: 100%; 
+}
+
+.info-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+}
+
+.legend {
+    line-height: 18px;
+    color: #555;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 6px 8px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.legend.mobile-legend {
+    max-width: 160px;
+    font-size: 10px;
+    line-height: 14px;
+    padding: 4px 6px;
+}
+
+@media (min-width: 768px) {
+    .legend.mobile-legend {
+        max-width: none;
+        font-size: inherit;
+        line-height: 18px;
+        padding: 6px 8px;
+    }
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+    border-radius: 2px;
+}
+
+.legend.mobile-legend i {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+}
+
+@media (min-width: 768px) {
+    .legend.mobile-legend i {
+        width: 18px;
+        height: 18px;
+        margin-right: 8px;
+    }
+}
+
+.box-plot-container { 
+    width: 100%; 
+    height: 100px;
+}
+
+.box-plot-area {
+    width: 100%; 
+    height: 50%;
+}
+
+.sorted-asc::after {
+    content: " ▲";
+    font-size: 0.7em;
+}
+
+.sorted-desc::after {
+    content: " ▼";
+    font-size: 0.7em;
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    min-width: 320px;
+}
+
+.custom-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    width: auto !important;
+    min-width: 320px;
+}
+
+.custom-popup .leaflet-popup-content > div {
+    width: 100%;
+    box-sizing: border-box;
+}
+
