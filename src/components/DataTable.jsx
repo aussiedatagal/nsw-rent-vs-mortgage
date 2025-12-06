@@ -32,7 +32,7 @@ export function DataTable({ housingData, suburbLookup, onPostcodeClick, loading 
       const lowerQuery = searchQuery.toLowerCase().trim();
       data = data.filter(
         (item) =>
-          item.postcode.includes(lowerQuery) ||
+          String(item.postcode).includes(lowerQuery) ||
           item.suburb.toLowerCase().includes(lowerQuery)
       );
     }
