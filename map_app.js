@@ -84,32 +84,7 @@ class HousingCostMap {
         if (!interestRateInput) return;
 
         const DEFAULT_RATE = 5.3;
-
-        try {
-            const savedRate = localStorage.getItem('lastInterestRate');
-            if (savedRate) {
-                const saved = parseFloat(savedRate);
-                if (!isNaN(saved) && saved >= 2 && saved <= 15) {
-                    interestRateInput.value = saved.toFixed(2);
-                    return;
-                }
-            }
-        } catch (error) {
-            // localStorage not available
-        }
-
-        interestRateInput.value = DEFAULT_RATE;
-
-        interestRateInput.addEventListener('change', () => {
-            try {
-                const newRate = parseFloat(interestRateInput.value);
-                if (!isNaN(newRate) && newRate >= 2 && newRate <= 15) {
-                    localStorage.setItem('lastInterestRate', newRate.toString());
-                }
-            } catch (error) {
-                // Ignore
-            }
-        });
+        interestRateInput.value = DEFAULT_RATE.toFixed(1);
     }
 
     async _loadData() {
