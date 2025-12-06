@@ -199,11 +199,11 @@ export function Map({
       ];
 
       const mobileClass = isMobile ? 'mobile-legend' : '';
-      let content = `<h4 class="font-bold mb-0.5 md:mb-1 text-xs md:text-sm">Rent/Total Cost Ratio</h4><div class="space-y-0.5 md:space-y-1">`;
+      let content = `<h4 class="font-bold mb-1 md:mb-1 text-xs md:text-sm" style="margin-bottom: 4px;">Rent/Total Cost Ratio</h4><div class="space-y-0.5 md:space-y-1">`;
       grades.forEach((g) => {
-        content += `<p class="text-xs leading-tight"><i style="background:${g.color}"></i> ${g.label}</p>`;
+        content += `<p style="display: flex; align-items: flex-start; margin: 0 0 3px 0;"><i style="background:${g.color}; width: ${isMobile ? '14px' : '18px'}; height: ${isMobile ? '14px' : '18px'}; margin-right: ${isMobile ? '6px' : '8px'}; flex-shrink: 0; display: block; border-radius: 2px; opacity: 0.7;"></i><span style="flex: 1; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3;">${g.label}</span></p>`;
       });
-      content += `</div><hr class="my-0.5 md:my-1 border-gray-300"><p class="text-xs leading-tight">No Data: <i style="background:#ccc; border: 1px solid #777; margin-left: 0;"></i></p>`;
+      content += `</div><hr class="my-1 md:my-1 border-gray-300" style="margin: 6px 0;"><p style="display: flex; align-items: flex-start; margin: 0;"><i style="background:#ccc; border: 1px solid #777; width: ${isMobile ? '14px' : '18px'}; height: ${isMobile ? '14px' : '18px'}; margin-right: ${isMobile ? '6px' : '8px'}; flex-shrink: 0; display: block; border-radius: 2px;"></i><span style="flex: 1; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3;">No Data</span></p>`;
       div.className = `info legend p-1.5 md:p-2 ${mobileClass}`;
       div.innerHTML = content;
       return div;

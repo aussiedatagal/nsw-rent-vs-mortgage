@@ -33,6 +33,7 @@ export function Header() {
               {description}
             </p>
             <div className="space-y-1 text-xs text-gray-600">
+              <div className="font-semibold text-gray-700 mt-2 mb-1">Data Sources:</div>
               <div>
                 <strong>Rent & Sales Data:</strong>{' '}
                 <a
