@@ -6,9 +6,10 @@ dist
 .env.local
 
 # Data folders - these contain source data files, not needed for the site
-data/
-data_orig/
-old/
+# Use /data/ to only ignore root-level data folder, not public/data/
+/data/
+/data_orig/
+/old/
 
 public/data/*.xlsx
 public/data/*.py
