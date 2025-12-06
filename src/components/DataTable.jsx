@@ -75,9 +75,6 @@ export function DataTable({ housingData, suburbLookup, onPostcodeClick, loading 
 
   return (
     <div className="w-full md:w-1/3 max-w-lg bg-white p-4 shadow-xl flex-col h-full hidden md:flex">
-      <h2 className="text-2xl font-extrabold text-gray-800 mb-4 sticky top-0 bg-white pt-1 pb-2 border-b">
-        Housing Cost Data
-      </h2>
       <div className="mb-4">
         <input
           type="text"
