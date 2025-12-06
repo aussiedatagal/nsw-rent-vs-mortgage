@@ -18,7 +18,7 @@ export function Popup({ postcode, data, suburbLookup, mortgageType }) {
   const salesPrice = (data.yearly_median_sales_price_000s || 0) * 1000;
 
   const rentQ3 = data.yearly_third_quartile_weekly_rent || data.yearly_median_weekly_rent || 0;
-  const paymentQ3 = data.yearly_third_quartile_weekly_payment || data.calculated_weekly_payment || 0;
+  const paymentQ3 = data.yearly_third_quartile_total_weekly_cost || data.yearly_third_quartile_weekly_payment || data.total_weekly_homeowner_cost || data.calculated_weekly_payment || 0;
   const maxCost = Math.max(rentQ3, paymentQ3) * 1.1 || 100;
 
   return (
@@ -59,6 +59,24 @@ export function Popup({ postcode, data, suburbLookup, mortgageType }) {
             </span>
           </div>
         )}
+
+        {data.total_weekly_homeowner_cost && data.total_weekly_homeowner_cost > data.calculated_weekly_payment && (
+          <div className="flex justify-between items-center">
+            <span className="text-xs pl-2 text-gray-600">└ + Homeowner Costs:</span>
+            <span className="font-semibold text-sm text-gray-600">
+              {formatCurrency(data.total_weekly_homeowner_cost - data.calculated_weekly_payment)}
+            </span>
+          </div>
+        )}
+
+        {data.total_weekly_homeowner_cost && (
+          <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-200">
+            <span className="text-xs font-semibold">Total Weekly Cost:</span>
+            <span className="font-bold text-sm text-red-700">
+              {formatCurrency(data.total_weekly_homeowner_cost)}
+            </span>
+          </div>
+        )}
       </div>
 
       <h4 className="text-xs font-semibold mt-2 mb-1">Weekly Cost Range</h4>
@@ -72,9 +90,9 @@ export function Popup({ postcode, data, suburbLookup, mortgageType }) {
           maxCost={maxCost}
         />
         <BoxPlot
-          q1={data.yearly_first_quartile_weekly_payment}
-          median={data.calculated_weekly_payment}
-          q3={data.yearly_third_quartile_weekly_payment}
+          q1={data.yearly_first_quartile_total_weekly_cost || data.yearly_first_quartile_weekly_payment}
+          median={data.total_weekly_homeowner_cost || data.calculated_weekly_payment}
+          q3={data.yearly_third_quartile_total_weekly_cost || data.yearly_third_quartile_weekly_payment}
           label={mortgageType === 'PI' ? 'P+I' : 'I.O.'}
           color="#ef4444"
           maxCost={maxCost}

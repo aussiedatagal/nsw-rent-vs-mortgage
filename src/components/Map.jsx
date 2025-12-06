@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Popup } from './Popup';
 import { MobileOverlay } from './MobileOverlay';
-import { getColor, updateAllRatios, getRepresentativeInterestRatio } from '../utils/mortgageCalculations';
+import { getColor, updateAllRatios, getRepresentativeCostRatio } from '../utils/mortgageCalculations';
 
 const defaultStyle = { weight: 1, opacity: 1, color: 'white', fillOpacity: 0.7 };
 const highlightStyle = { weight: 3, color: '#333', fillOpacity: 1 };
@@ -110,10 +110,10 @@ export function Map({
       const postcode = String(feature.properties.POA_CODE21).trim();
       const data = updatedData[postcode];
       const ratio = data ? data.rent_vs_payment_ratio : null;
-      const interestToPaymentRatio = data ? data.interest_to_payment_ratio : null;
+      const costRatio = data ? data.cost_ratio : null;
       return {
         ...defaultStyle,
-        fillColor: getColor(ratio, interestToPaymentRatio)
+        fillColor: getColor(ratio, costRatio)
       };
     };
 
@@ -165,33 +165,34 @@ export function Map({
     
     legend.onAdd = () => {
       const div = L.DomUtil.create('div', 'info legend');
-      const interestThreshold = getRepresentativeInterestRatio(
+      const costThreshold = getRepresentativeCostRatio(
         settings.interestRate,
         settings.loanTermYears,
-        settings.mortgageType
+        settings.mortgageType,
+        settings.weeklyHomeownerCosts || 0
       );
-      const interestThresholdPercent = (interestThreshold * 100).toFixed(0);
+      const costThresholdPercent = (costThreshold * 100).toFixed(0);
 
       const grades = [
         {
-          ratio: interestThreshold * 0.5,
-          color: getColor(interestThreshold * 0.5, interestThreshold),
-          label: `< ${interestThresholdPercent}% (Rent does not cover interest)`
+          ratio: costThreshold * 0.5,
+          color: getColor(costThreshold * 0.5, costThreshold),
+          label: `< ${costThresholdPercent}% (Rent < non-asset costs)`
         },
         {
-          ratio: (interestThreshold + 1.0) / 2,
-          color: getColor((interestThreshold + 1.0) / 2, interestThreshold),
-          label: `${interestThresholdPercent}% – 100% (Rent covers interest and then some)`
+          ratio: (costThreshold + 1.0) / 2,
+          color: getColor((costThreshold + 1.0) / 2, costThreshold),
+          label: `${costThresholdPercent}% – 100% (Rent ≥ non-asset costs, < total cost)`
         },
         {
           ratio: 1.2,
-          color: getColor(1.2, interestThreshold),
-          label: '≥ 100% (Rent covers entire payment or more)'
+          color: getColor(1.2, costThreshold),
+          label: '≥ 100% (Rent ≥ total homeowner cost)'
         }
       ];
 
       const mobileClass = isMobile ? 'mobile-legend' : '';
-      let content = `<h4 class="font-bold mb-0.5 md:mb-1 text-xs md:text-sm">Rent/Payment Ratio</h4><div class="space-y-0.5 md:space-y-1">`;
+      let content = `<h4 class="font-bold mb-0.5 md:mb-1 text-xs md:text-sm">Rent/Total Cost Ratio</h4><div class="space-y-0.5 md:space-y-1">`;
       grades.forEach((g) => {
         content += `<p class="text-xs leading-tight"><i style="background:${g.color}"></i> ${g.label}</p>`;
       });

@@ -63,6 +63,9 @@ function App() {
               if (newSettings.depositAmount !== undefined) {
                 mortgageSettings.setDepositAmount(newSettings.depositAmount);
               }
+              if (newSettings.weeklyHomeownerCosts !== undefined) {
+                mortgageSettings.setWeeklyHomeownerCosts(newSettings.weeklyHomeownerCosts);
+              }
             }}
           />
         </div>

@@ -7,6 +7,7 @@ export function useMortgageSettings() {
   const [depositType, setDepositType] = useState('percent');
   const [depositPercent, setDepositPercent] = useState(20);
   const [depositAmount, setDepositAmount] = useState(100000);
+  const [weeklyHomeownerCosts, setWeeklyHomeownerCosts] = useState(50);
 
   const settings = {
     mortgageType,
@@ -14,7 +15,8 @@ export function useMortgageSettings() {
     loanTermYears: loanTerm,
     depositType,
     depositPercent,
-    depositAmount
+    depositAmount,
+    weeklyHomeownerCosts
   };
 
   return {
@@ -30,7 +32,9 @@ export function useMortgageSettings() {
     depositPercent,
     setDepositPercent,
     depositAmount,
-    setDepositAmount
+    setDepositAmount,
+    weeklyHomeownerCosts,
+    setWeeklyHomeownerCosts
   };
 }
 
