@@ -6,7 +6,7 @@ import { Popup } from './Popup';
 import { MobileOverlay } from './MobileOverlay';
 import { getColor, updateAllRatios, getRepresentativeCostRatio } from '../utils/mortgageCalculations';
 
-const defaultStyle = { weight: 1, opacity: 1, color: 'white', fillOpacity: 0.7 };
+const defaultStyle = { weight: 0.5, opacity: 0.4, color: '#e5e7eb', fillOpacity: 0.7 };
 const highlightStyle = { weight: 3, color: '#333', fillOpacity: 1 };
 
 export function Map({
