@@ -172,7 +172,7 @@ export function MortgageSettings({ settings, onSettingsChange }) {
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"
             >
-              NSW Dept. of Planning, Housing & Infrastructure
+              NSW Department of Communities and Justice (DCJ)
             </a>
             .
           </div>
