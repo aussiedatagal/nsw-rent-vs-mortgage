@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  base: '/nsw-rent-vs-mortgage/',
   publicDir: 'public',
   build: {
     outDir: 'dist',

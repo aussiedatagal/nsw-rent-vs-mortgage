@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 
-const GEOJSON_PATH = '/data/POA_2021_NSW.geojson';
-const SUBURBS_PATH = '/data/postcode_to_suburbs.csv';
-const AGGREGATED_DATA_PATH = '/data/aggregated_yearly_data.csv';
+const BASE_URL = import.meta.env.BASE_URL;
+const GEOJSON_PATH = `${BASE_URL}data/POA_2021_NSW.geojson`;
+const SUBURBS_PATH = `${BASE_URL}data/postcode_to_suburbs.csv`;
+const AGGREGATED_DATA_PATH = `${BASE_URL}data/aggregated_yearly_data.csv`;
 
 export function useDataLoader() {
   const [geojsonData, setGeojsonData] = useState(null);
