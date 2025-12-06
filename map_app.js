@@ -47,6 +47,9 @@ class HousingCostMap {
 
         this._addLegend();
         this.map.on('popupclose', () => {
+            if (this.activePopupLayer) {
+                this.geojsonLayer.resetStyle(this.activePopupLayer);
+            }
             this.openPostcode = null;
             this.activePopupLayer = null;
         });
@@ -204,15 +207,19 @@ class HousingCostMap {
                 } else {
                     data.rent_vs_payment_ratio = Infinity;
                 }
-                this._calculateQuartilePayments(data, actualDeposit, interestRate, loanTermYears, this.mortgageType);
+                this._calculateQuartilePayments(data, this.depositType, depositPercent, depositAmount, interestRate, loanTermYears, this.mortgageType);
             }
         }
     }
 
-    _calculateQuartilePayments(data, deposit, rate, term, type) {
+    _calculateQuartilePayments(data, depositType, depositPercent, depositAmount, rate, term, type) {
         const q1Sales = (data.yearly_first_quartile_sales_000s || 0) * 1000;
         if (q1Sales) {
-            const q1Loan = Math.max(0, q1Sales - deposit);
+            // Recalculate deposit for Q1 based on deposit type
+            const q1Deposit = depositType === 'percent'
+                ? q1Sales * (depositPercent / 100)
+                : depositAmount;
+            const q1Loan = Math.max(0, q1Sales - q1Deposit);
             const q1Mortgage = this._calculateMortgage(q1Loan, rate, term, type);
             data.yearly_first_quartile_weekly_payment = q1Mortgage.payment * 12 / 52;
         } else {
@@ -220,10 +227,15 @@ class HousingCostMap {
         }
         const q3Sales = (data.yearly_third_quartile_sales_000s || 0) * 1000;
         if (q3Sales) {
-            data.yearly_third_quartile_weekly_payment = null;
-            const q3Loan = Math.max(0, q3Sales - deposit);
+            // Recalculate deposit for Q3 based on deposit type
+            const q3Deposit = depositType === 'percent'
+                ? q3Sales * (depositPercent / 100)
+                : depositAmount;
+            const q3Loan = Math.max(0, q3Sales - q3Deposit);
             const q3Mortgage = this._calculateMortgage(q3Loan, rate, term, type);
             data.yearly_third_quartile_weekly_payment = q3Mortgage.payment * 12 / 52;
+        } else {
+            data.yearly_third_quartile_weekly_payment = null;
         }
     }
 
@@ -268,7 +280,7 @@ class HousingCostMap {
     }
 
     _styleFeature(feature) {
-        const postcode = String(feature.properties.POA_CODE21);
+        const postcode = String(feature.properties.POA_CODE21).trim();
         const data = this.housingData[postcode];
         const ratio = data ? data.rent_vs_payment_ratio : null;
         const interestToPaymentRatio = data ? data.interest_to_payment_ratio : null;
@@ -280,8 +292,18 @@ class HousingCostMap {
 
     _onEachFeature(feature, layer) {
         layer.on({
-            mouseover: () => this._highlightFeature(layer),
-            mouseout: () => this.geojsonLayer.resetStyle(layer),
+            mouseover: () => {
+                // Only highlight on hover if this layer doesn't have an open popup
+                if (!layer.getPopup() || !layer.getPopup().isOpen()) {
+                    this._highlightFeature(layer);
+                }
+            },
+            mouseout: () => {
+                // Only reset style if this layer doesn't have an open popup
+                if (!layer.getPopup() || !layer.getPopup().isOpen()) {
+                    this.geojsonLayer.resetStyle(layer);
+                }
+            },
             click: (event) => this._showPopup(event, feature, layer)
         });
     }
@@ -371,33 +393,45 @@ class HousingCostMap {
     }
 
     _highlightAndZoom(postcode) {
+        const targetPostcode = String(postcode).trim();
+        let found = false;
         this.geojsonLayer.eachLayer(layer => {
-            if (String(layer.feature.properties.POA_CODE21) === postcode) {
+            const layerPostcode = String(layer.feature.properties.POA_CODE21).trim();
+            if (layerPostcode === targetPostcode) {
                 this.map.flyToBounds(layer.getBounds(), { padding: [50, 50], duration: 1.0 });
                 this._showPopup({ latlng: layer.getBounds().getCenter() }, layer.feature, layer);
+                found = true;
             }
         });
+        if (!found) {
+            console.warn(`Postcode ${targetPostcode} not found on map`);
+        }
     }
 
     _showPopup(event, feature, layer, isRefresh = false) {
-        const postcode = String(feature.properties.POA_CODE21);
+        const postcode = String(feature.properties.POA_CODE21).trim();
         const data = this.housingData[postcode];
         if (!data) return;
 
-        // Check if mobile and show overlay instead
-        const isMobile = window.innerWidth < 768;
-        if (isMobile) {
-            this._showMobileOverlay(postcode, data);
-            return;
-        }
-
+        // Reset style of previous active layer if switching to a different postcode
         if (this.activePopupLayer && this.activePopupLayer !== layer) {
             this.activePopupLayer.closePopup();
+            this.geojsonLayer.resetStyle(this.activePopupLayer);
         }
 
         if (!isRefresh) {
             this.openPostcode = postcode;
             this.activePopupLayer = layer;
+        }
+
+        // Highlight the clicked layer (for both mobile and desktop)
+        this._highlightFeature(layer);
+
+        // Check if mobile and show overlay instead
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+            this._showMobileOverlay(postcode, data, layer);
+            return;
         }
 
         const popupContent = this._createPopupContent(postcode, data);
@@ -417,16 +451,49 @@ class HousingCostMap {
         // Check if mobile overlay is open
         const overlay = document.getElementById('mobile-detail-overlay');
         if (overlay && !overlay.classList.contains('translate-y-full')) {
-            // Refresh mobile overlay
-            if (this.openPostcode) {
+            // Refresh mobile overlay - find the layer and highlight it
+            if (this.openPostcode && this.geojsonLayer) {
                 const data = this.housingData[this.openPostcode];
                 if (data) {
-                    this._showMobileOverlay(this.openPostcode, data);
+                    // Find and highlight the correct layer
+                    const targetPostcode = String(this.openPostcode).trim();
+                    let foundLayer = null;
+                    this.geojsonLayer.eachLayer(layer => {
+                        const layerPostcode = String(layer.feature.properties.POA_CODE21).trim();
+                        if (layerPostcode === targetPostcode) {
+                            // Reset previous active layer if different
+                            if (this.activePopupLayer && this.activePopupLayer !== layer) {
+                                this.geojsonLayer.resetStyle(this.activePopupLayer);
+                            }
+                            this.activePopupLayer = layer;
+                            this._highlightFeature(layer);
+                            foundLayer = layer;
+                        }
+                    });
+                    this._showMobileOverlay(this.openPostcode, data, foundLayer);
                 }
             }
-        } else if (this.activePopupLayer) {
-            // Refresh desktop popup
-            this._showPopup({ latlng: this.activePopupLayer.getBounds().getCenter() }, this.activePopupLayer.feature, this.activePopupLayer, true);
+        } else if (this.openPostcode && this.geojsonLayer) {
+            // Refresh desktop popup - find the correct layer by matching postcode
+            let found = false;
+            const targetPostcode = String(this.openPostcode).trim();
+            this.geojsonLayer.eachLayer(layer => {
+                const layerPostcode = String(layer.feature.properties.POA_CODE21).trim();
+                if (layerPostcode === targetPostcode) {
+                    // Reset previous active layer if it's different
+                    if (this.activePopupLayer && this.activePopupLayer !== layer) {
+                        this.geojsonLayer.resetStyle(this.activePopupLayer);
+                    }
+                    this.activePopupLayer = layer;
+                    this._showPopup({ latlng: layer.getBounds().getCenter() }, layer.feature, layer, true);
+                    found = true;
+                }
+            });
+            // If we didn't find the layer, clear the active popup
+            if (!found) {
+                this.openPostcode = null;
+                this.activePopupLayer = null;
+            }
         }
     }
 
@@ -658,12 +725,17 @@ class HousingCostMap {
         }
     }
 
-    _showMobileOverlay(postcode, data) {
+    _showMobileOverlay(postcode, data, layer = null) {
         const overlay = document.getElementById('mobile-detail-overlay');
         if (!overlay) return;
 
         // Store the open postcode for refresh
         this.openPostcode = postcode;
+        
+        // If layer is provided, ensure it's set as active (for highlighting)
+        if (layer) {
+            this.activePopupLayer = layer;
+        }
 
         const formatter = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
         const suburbs = this.suburbLookup[postcode] || `Postcode ${postcode}`;
@@ -734,10 +806,16 @@ class HousingCostMap {
         const overlay = document.getElementById('mobile-detail-overlay');
         if (!overlay) return;
 
+        // Reset the highlighted layer style
+        if (this.activePopupLayer) {
+            this.geojsonLayer.resetStyle(this.activePopupLayer);
+        }
+
         overlay.classList.remove('translate-y-0');
         overlay.classList.add('translate-y-full');
         document.body.style.overflow = '';
         this.openPostcode = null;
+        this.activePopupLayer = null;
     }
 
 }
