@@ -172,12 +172,19 @@ export function Map({
         settings.weeklyHomeownerCosts || 0
       );
       const costThresholdPercent = (costThreshold * 100).toFixed(0);
+      const greenSplitPoint = costThreshold * 0.65;
+      const greenSplitPercent = (greenSplitPoint * 100).toFixed(0);
 
       const grades = [
         {
-          ratio: costThreshold * 0.5,
-          color: getColor(costThreshold * 0.5, costThreshold),
-          label: `< ${costThresholdPercent}% (Rent < non-asset costs)`
+          ratio: greenSplitPoint * 0.5,
+          color: getColor(greenSplitPoint * 0.5, costThreshold),
+          label: `< ${greenSplitPercent}% (Rent covers little of non-asset costs)`
+        },
+        {
+          ratio: (greenSplitPoint + costThreshold) / 2,
+          color: getColor((greenSplitPoint + costThreshold) / 2, costThreshold),
+          label: `${greenSplitPercent}% – ${costThresholdPercent}% (Rent covers most of non-asset costs)`
         },
         {
           ratio: (costThreshold + 1.0) / 2,

@@ -116,9 +116,13 @@ export function getColor(ratio, costRatio = null) {
     ? costRatio 
     : 0.75;
   
-  if (ratio >= 1.0 || ratio === Infinity) return '#ef4444';
-  if (ratio >= costThreshold) return '#fbbf24';
-  return '#22c55e';
+  // Split point: 65% of costThreshold - rent covering "most" vs "not much" of non-asset costs
+  const greenSplitPoint = costThreshold * 0.65;
+  
+  if (ratio >= 1.0 || ratio === Infinity) return '#ef4444'; // Red: rent covers total cost
+  if (ratio >= costThreshold) return '#fbbf24'; // Yellow: rent covers non-asset costs but not total
+  if (ratio >= greenSplitPoint) return '#84cc16'; // Lime/yellow-green: rent covers most of non-asset costs (good, but only just, almost bad)
+  return '#bef264'; // Light lime-green: rent doesn't cover much of non-asset costs
 }
 
 export function getRepresentativeInterestRatio(interestRate, loanTermYears, mortgageType) {
