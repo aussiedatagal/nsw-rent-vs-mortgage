@@ -5,3 +5,6 @@ dist
 .env
 .env.local
 
+
+# research behind the page stays local
+research/
